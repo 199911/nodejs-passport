@@ -40,7 +40,8 @@ var localStrategy = new LocalStrategy({
 
 Passport.use( 'local', localStrategy );
 
-Passport.use(new GoogleStrategy({
+Passport.use(new GoogleStrategy(
+  {
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
     callbackURL: "http://localhost:3000/auth/google/callback"
@@ -48,7 +49,33 @@ Passport.use(new GoogleStrategy({
   function(accessToken, refreshToken, profile, done) {
     console.log(`accessToken: ${accessToken}`);
     console.log(`refreshToken: ${refreshToken}`);
-    return done(null, { 'yo': 'hi' });
+    // Use accessToken?
+    const {google} = require('googleapis');
+    const OAuth2 = google.auth.OAuth2;
+
+    // WARNING: Make sure your CLIENT_SECRET is stored in a safe place.
+    const oauth2Client = new OAuth2({
+      clientID: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
+      callbackURL: "http://localhost:3000/auth/google/callback"
+    });
+
+    // Retrieve tokens via token exchange explained above or set them:
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken
+      // Optional, provide an expiry_date (milliseconds since the Unix Epoch)
+      // expiry_date: (new Date()).getTime() + (1000 * 60 * 60 * 24 * 7)
+    });
+
+    console.log('oauth2')
+    const oauth2 = google.oauth2('v2')
+    oauth2.userinfo.get({
+      auth: oauth2Client
+    }, function (err, response) {
+      console.log(response.data);
+      return done(null, { 'yo': 'hi' });
+    });
   }
 ));
 
@@ -71,8 +98,6 @@ app.get('/auth/google',
 app.get('/auth/google/callback',
   Passport.authenticate('google', { failureRedirect: '/login', session: false }),
   function(req, res) {
-    console.log('callback');
-    console.log(req.query);
     res.send('OK')
   });
 
