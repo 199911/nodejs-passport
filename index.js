@@ -1,7 +1,10 @@
 var Passport = require( 'passport' );
 var LocalStrategy = require( 'passport-local' ).Strategy;
+var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 var Express = require( 'express' );
 var BodyParser = require( 'body-parser' );
+
+const {GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET} = require('./config');
 
 var users = {
   zack: {
@@ -37,6 +40,18 @@ var localStrategy = new LocalStrategy({
 
 Passport.use( 'local', localStrategy );
 
+Passport.use(new GoogleStrategy({
+    clientID: GOOGLE_CLIENT_ID,
+    clientSecret: GOOGLE_CLIENT_SECRET,
+    callbackURL: "http://localhost:3000/auth/google/callback"
+  },
+  function(accessToken, refreshToken, profile, done) {
+    console.log(`accessToken: ${accessToken}`);
+    console.log(`refreshToken: ${refreshToken}`);
+    return done(null, { 'yo': 'hi' });
+  }
+));
+
 var app = Express();
 app.use( BodyParser.urlencoded( { extended: false } ) );
 app.use( BodyParser.json() );
@@ -49,6 +64,17 @@ app.post(
     res.send( 'User ID ' + req.user.id );
   }
 );
+
+app.get('/auth/google',
+  Passport.authenticate('google', { scope: ['https://www.googleapis.com/auth/userinfo.email'] }));
+
+app.get('/auth/google/callback',
+  Passport.authenticate('google', { failureRedirect: '/login', session: false }),
+  function(req, res) {
+    console.log('callback');
+    console.log(req.query);
+    res.send('OK')
+  });
 
 app.listen( 3000, function() {
   console.log( 'Listening on 3000' );
