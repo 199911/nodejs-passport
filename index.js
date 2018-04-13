@@ -49,7 +49,9 @@ Passport.use(new GoogleStrategy(
   function(accessToken, refreshToken, profile, done) {
     console.log(`accessToken: ${accessToken}`);
     console.log(`refreshToken: ${refreshToken}`);
-    // Use accessToken?
+    // Profile contain user email address
+    console.log(`profile: ${JSON.stringify(profile, null, 2)}`);
+
     const {google} = require('googleapis');
     const OAuth2 = google.auth.OAuth2;
 
